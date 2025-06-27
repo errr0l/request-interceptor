@@ -46,19 +46,15 @@ ps: 拦截请求数量上限为100，之后按照'先进队列'的条件删除�
 
 ## 二、使用示例
 
-### 1、监听
+### 1、拦截请求
 
-<video width="320" height="240" controls>
-  <source src="./static/7b5292222c8bda6230f34d47a7e55c82.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+![image](./static/images/7b5292222c8bda6230f34d47a7e55c82-ezgif.com-video-to-gif-converter.gif)
 
-### 2、导出
+### 2、导出数据
 
-<video width="320" height="240" controls>
-  <source src="./static/7b5292222c8bda6230f34d47a7e55c82.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+windows选powershell，unix系列选择curl，根据需要选择。
+
+![image](./static/images/18a7dcbb1f3feabb2184786efa223db9-ezgif.com-video-to-gif-converter.gif)
 
 ## 三、安装
 

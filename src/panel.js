@@ -150,14 +150,16 @@ function downloadTextFile(text, filename) {
 const logFilters = {
     // pqt专用
     '1': (logs) => {
+        // 目前来说，都是post请求，且每种接口只取一次
+        const matched = {};
         const _logs = logs.filter(log => {
-            // 目前来说，都是post请求
-            if (log.method !== "POST") {
+            if (log.method !== "POST" || matched[log.url]) {
                 return false;
             }
             // '/sexual_dating/claimItemExplore', '/quiz_dating/claim/explore/item', '/girl-watch/claim/explore/item'
             for (const item of ['/claimItemExplore', '/claim/explore/item']) {
                 if (log.url.includes(item)) {
+                    matched[log.url] = 1;
                     return true;
                 }
             }

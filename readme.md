@@ -48,6 +48,8 @@ ps: 拦截请求数量上限为100，之后按照'先进队列'的条件删除�
 
 ### 1、拦截请求
 
+请务必点击'开始监听'后，再进行操作，否则拦截不到数据。
+
 ![image](./static/images/7b5292222c8bda6230f34d47a7e55c82-ezgif.com-video-to-gif-converter.gif)
 
 ### 2、导出数据

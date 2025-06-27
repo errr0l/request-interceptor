@@ -56,7 +56,7 @@ ps: 拦截请求数量上限为100，之后按照'先进队列'的条件删除�
 
 windows选powershell，unix系列选择curl，根据需要选择。
 
-![image](./static/images/18a7dcbb1f3feabb2184786efa223db9-ezgif.com-video-to-gif-converter.gif)
+![image](./static/images/62a42e0357bb58b7d96c788bd8026832-ezgif.com-video-to-gif-converter.gif)
 
 ## 三、安装
 

@@ -66,6 +66,8 @@ windows选powershell，unix系列选择curl，根据需要选择。
 
 前往[狐火插件市场](https://addons.mozilla.org/zh-CN/firefox/)，搜索Request Interceptor -> 进入详情页 -> 添加到 Firefox -> 添加。
 
+> https://addons.mozilla.org/zh-CN/firefox/addon/_request-interceptor/
+
 ### 2、自行打包&安装
 
 打包参照第四章节，不过这种方式只能临时安装，重启应用后将会被删除，因此该种方式只适用于临时调试。

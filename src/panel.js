@@ -4,18 +4,26 @@ const clearBtn = document.getElementById("clear");
 const exportCurlBtn = document.getElementById("export-curl");
 const exportPowershellBtn = document.getElementById("export-powershell");
 const patternInput = document.getElementById("url-pattern");
+const patternExpDiv = document.getElementById('url-pattern-exp');
 
 const DEFAULT_PATTERN = "<all_urls>";
 const logs = [];
 
 let monitoring = false;
+let timer = null;
 
 // 监听事件
 chrome.runtime.onMessage.addListener((message) => {
     if (message.type === "NEW_REQUEST_LOG") {
         logs.unshift(message.data);
         if (logs.length > 100) logs.pop();
-        render();
+        if (timer) {
+            return;
+        }
+        timer = setTimeout(() => {
+            render();
+            timer = null;
+        }, 1000);
     }
     else {
         console.log(message);
@@ -48,6 +56,13 @@ exportPowershellBtn.onclick = () => {
     let logs = filterIfNecessary();
     const content = makeFileContent(logs, 'powershell');
     downloadTextFile(content, "requests_ps.txt");
+}
+
+patternExpDiv.onclick = (ev) => {
+    let target = ev.target;
+    if (target.tagName === "SPAN") {
+        patternInput.value = target.textContent;
+    }
 }
 
 function filterIfNecessary() {
@@ -189,36 +204,40 @@ const logFilters = {
     }
 };
 
+function createLogItemHtml(item) {
+    let html = `<div class="log-item">`;
+    html += `<strong>时间: </strong> ${new Date(item.timestamp).toLocaleString()}<br>`;
+    html += `<strong>URL: </strong> ${item.url}<br>`;
+    html += `<strong>方法: </strong> ${item.method}<br>`;
+
+    if (item.headers) {
+        html += `<strong>请求头:</strong><pre>`;
+        for (let key in item.headers) {
+            html += `${key}: ${item.headers[key]}\n`;
+        }
+        html += `</pre>`;
+    }
+
+    if (item.body) {
+        html += `<strong>请求体:</strong><pre>`;
+        for (let key in item.body) {
+            html += `${key}: ${item.body[key]}\n`;
+        }
+        html += `</pre>`;
+    }
+    html += `</div>`;
+    return html;
+}
 
 function render() {
     if (logs.length === 0) {
-        logDiv.innerHTML = "暂无数据.";
+        logDiv.innerHTML = "无数据";
         return;
     }
-    let output = `<div>数量：${logs.length}</div>`;
+    let html = `<div class="count">数量：${logs.length}</div>`;
     for (const item of logs) {
-        output += `<div class="log-item">`;
-        output += `<strong>时间: </strong> ${new Date(item.timestamp).toLocaleString()}<br>`;
-        output += `<strong>URL: </strong> ${item.url}<br>`;
-        output += `<strong>方法: </strong> ${item.method}<br>`;
-
-        if (item.headers) {
-            output += `<strong>请求头:</strong><pre>`;
-            for (let key in item.headers) {
-                output += `${key}: ${item.headers[key]}\n`;
-            }
-            output += `</pre>`;
-        }
-
-        if (item.body) {
-            output += `<strong>请求体:</strong><pre>`;
-            for (let key in item.body) {
-                output += `${key}: ${item.body[key]}\n`;
-            }
-            output += `</pre>`;
-        }
-        output += `</div>`;
+        html += createLogItemHtml(item);
     }
 
-    logDiv.innerHTML = output;
+    logDiv.innerHTML = html;
 }

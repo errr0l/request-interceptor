@@ -33,6 +33,9 @@
             cursor: pointer;
             font-size: 12px;
         }
+        #url-pattern-exp span {
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -40,7 +43,14 @@
     <h3>控制面板</h3>
     <div>
         <label><strong>拦截规则: </strong></label>
-        <input type="text" id="url-pattern" placeholder="*://*/*.example.com/* | *://*.example.com/api/*" />
+        <input type="text" id="url-pattern" placeholder="请输入" />
+        <div id="url-pattern-exp">
+            <label>例如: </label>
+            <span>*://*/*.example.com/*</span>、
+            <span>*://*.example.com/api/*</span>、
+            <span>*://*.example.com/*</span>、
+            <span>*://*/api/*</span>
+        </div>
     </div>
     <hr />
     <div>

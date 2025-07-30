@@ -37,13 +37,15 @@ function beforeRequestListener(details) {
             }
         }
         else if (details.requestBody.raw) {
+            let _data;
             try {
                 const decoder = new TextDecoder('utf-8');
-                details.requestBody.data = JSON.parse(decoder.decode(details.requestBody.raw[0].bytes));
+                _data = decoder.decode(details.requestBody.raw[0].bytes);
+                details.requestBody.data = JSON.parse(_data);
             }
             catch (e) {
-                console.error('Failed to parse request body:', e);
-                details.requestBody.data = { error: '无法解析的请求体' };
+                console.log('Failed to parse request body:', e);
+                details.requestBody.data = { error: '无法解析的请求体', rawText: _data };
             }
         }
         else {

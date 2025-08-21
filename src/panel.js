@@ -5,12 +5,15 @@ const exportCurlBtn = document.getElementById("export-curl");
 const exportPowershellBtn = document.getElementById("export-powershell");
 const patternInput = document.getElementById("url-pattern");
 const patternExpDiv = document.getElementById('url-pattern-exp');
+const setFilenameBtn = document.getElementById('set-filename');
 
+let setFilenameBtnTextContent;
 const DEFAULT_PATTERN = "<all_urls>";
 const logs = [];
 
 let monitoring = false;
 let timer = null;
+let filename = "";
 
 // 监听事件
 chrome.runtime.onMessage.addListener((message) => {
@@ -23,7 +26,7 @@ chrome.runtime.onMessage.addListener((message) => {
         timer = setTimeout(() => {
             render();
             timer = null;
-        }, 1000);
+        }, 1500);
     }
     else {
         console.log(message);
@@ -49,13 +52,13 @@ clearBtn.onclick = () => {
 exportCurlBtn.onclick = () => {
     let logs = filterIfNecessary();
     const content = makeFileContent(logs, 'curl');
-    downloadTextFile(content, "requests.txt");
+    downloadTextFile(content, filename || "requests.txt");
 }
 
 exportPowershellBtn.onclick = () => {
     let logs = filterIfNecessary();
     const content = makeFileContent(logs, 'powershell');
-    downloadTextFile(content, "requests_ps.txt");
+    downloadTextFile(content, filename || "requests_ps.txt");
 }
 
 patternExpDiv.onclick = (ev) => {
@@ -136,12 +139,12 @@ function makeFileContent(logs, type) {
     const maker = makers[type];
     for (const item of logs) {
         content += maker(item);
-        content += "\n\n";
+        content += "\n";
         // 按需设置分隔符；
-        if (item.splitor) {
-            content += item.splitor;
-            content += "\n\n";
-        }
+        // if (item.splitor) {
+        //     content += item.splitor;
+        //     content += "\n\n";
+        // }
     }
     return content;
 }
@@ -186,15 +189,15 @@ const logFilters = {
         // 默认情况下，新数据排前;
         const latest = _logs[0];
         // 取得最后一个
-        const last = _logs[_logs.length - 1];
+        // const last = _logs[_logs.length - 1];
         const field = "X-QOOKIA-PACK";
         const xQookiaPack = latest.headers[field];
         // 将最新请求的x-qookia-pack字段值应用于其他请求
         for (const item of _logs) {
             // 设置分隔符
-            if (item !== last) {
-                item.splitor = "&&";
-            }
+            // if (item !== last) {
+            //     item.splitor = "&&";
+            // }
             if (item === latest) {
                 continue;
             }
@@ -204,11 +207,13 @@ const logFilters = {
     }
 };
 
-function createLogItemHtml(item) {
+function createLogItemHtml(item, i) {
     let html = `<div class="log-item">`;
     html += `<strong>时间: </strong> ${new Date(item.timestamp).toLocaleString()}<br>`;
     html += `<strong>URL: </strong> ${item.url}<br>`;
     html += `<strong>方法: </strong> ${item.method}<br>`;
+    html += `<strong>操作: </strong> <span class="btn-copy" data-type="curl" data-index="${i}">复制为curl</span> <span class="btn-copy" data-type="powershell" data-index="${i}">复制为PowerShell</span>`;
+    html += "<br>";
 
     if (item.headers) {
         html += `<strong>请求头:</strong><pre>`;
@@ -235,9 +240,49 @@ function render() {
         return;
     }
     let html = `<div class="count">数量：${logs.length}</div>`;
-    for (const item of logs) {
-        html += createLogItemHtml(item);
+    // for (const item of logs) {
+    //     html += createLogItemHtml(item);
+    // }
+    for (let i=0; i<logs.length; i++) {
+        const item = logs[i];
+        html += createLogItemHtml(item, i);
     }
 
     logDiv.innerHTML = html;
 }
+
+function copy(content) {
+    if (content) {
+        navigator.clipboard.writeText(content);
+        window.alert("复制成功");
+    }
+}
+
+logDiv.addEventListener('click', (event) => {
+    const target = event.target;
+    if (target.tagName !== 'SPAN') {
+        return;
+    }
+    if (target.className.includes("btn-copy")) {
+        const index = +target.getAttribute("data-index");
+        const type = target.getAttribute("data-type");
+        const log = logs[index];
+        const maker = makers[type];
+        const content = maker(log)
+        copy(content);
+    }
+});
+
+setFilenameBtn.addEventListener('click', () => {
+    const _filename = window.prompt("请输入文件名");
+    if (_filename) {
+        if (!_filename.endsWith(".txt")) {
+            _filename += ".txt";
+        }
+        filename = _filename;
+        if (!setFilenameBtnTextContent) {
+            setFilenameBtnTextContent = setFilenameBtn.textContent;
+        }
+        setFilenameBtn.textContent = `${setFilenameBtnTextContent}[${_filename.length > 10 ? _filename.slice(0, 10) : _filename}]`;
+    }
+});

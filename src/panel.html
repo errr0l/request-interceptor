@@ -36,6 +36,10 @@
         #url-pattern-exp span {
             cursor: pointer;
         }
+        .btn-copy {
+            font-size: 13px;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -55,7 +59,7 @@
     <hr />
     <div>
         <label><strong>数据过滤模式</strong>: </label>
-        <input type="radio" id="mode1" name="mode" value="1" checked /><label for="mode1">PQT专用</label>
+        <input type="radio" id="mode1" name="mode" value="1" checked /><label for="mode1">PQT活动专用</label>
         <input type="radio" id="mode2" name="mode" value="2" /><label for="mode2">无</label>
     </div>
     <hr />
@@ -65,6 +69,7 @@
         <button id="clear">清空数据</button>
         <button id="export-curl">导出curl格式</button>
         <button id="export-powershell">导出PowerShell格式</button>
+        <button id="set-filename">设置文件名</button>
     </div>
     <hr />
 

@@ -304,13 +304,12 @@ async function syncConfig() {
     return fetch(url, {
         signal: controller.signal
     })
-    .then(response => response.text())
-    .then(configStr => {
+    .then(response => response.json())
+    .then(_config => {
         try {
-            const _config = JSON.parse(configStr);
             Object.assign(config, _config);
             updateNode(_config);
-            localStorage.setItem("config", configStr);
+            localStorage.setItem("config", JSON.stringify(_config));
         }
         catch (error) {
             console.error(error);

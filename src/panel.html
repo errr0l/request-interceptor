@@ -48,19 +48,14 @@
     <div>
         <label><strong>拦截规则: </strong></label>
         <input type="text" id="url-pattern" placeholder="请输入" />
-        <div id="url-pattern-exp">
-            <label>例如: </label>
-            <span>*://*/*.example.com/*</span>、
-            <span>*://*.example.com/api/*</span>、
-            <span>*://*.example.com/*</span>、
-            <span>*://*/api/*</span>
-        </div>
+        <div id="url-pattern-exp"></div>
     </div>
     <hr />
     <div>
         <label><strong>数据过滤模式</strong>: </label>
-        <input type="radio" id="mode1" name="mode" value="1" checked /><label for="mode1">PQT活动专用</label>
+        <input type="radio" id="mode1" name="mode" value="1" /><label for="mode1">PQT活动专用</label>
         <input type="radio" id="mode2" name="mode" value="2" /><label for="mode2">无</label>
+        <div id="activity-pattern"></div>
     </div>
     <hr />
     <div>
@@ -70,6 +65,7 @@
         <button id="export-curl">导出curl格式</button>
         <button id="export-powershell">导出PowerShell格式</button>
         <button id="set-filename">设置文件名</button>
+        <button id="sync-config">同步配置</button>
     </div>
     <hr />
 

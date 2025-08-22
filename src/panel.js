@@ -6,14 +6,26 @@ const exportPowershellBtn = document.getElementById("export-powershell");
 const patternInput = document.getElementById("url-pattern");
 const patternExpDiv = document.getElementById('url-pattern-exp');
 const setFilenameBtn = document.getElementById('set-filename');
+const activityPatternDiv = document.getElementById("activity-pattern");
+const syncConfigBtn = document.getElementById("sync-config");
+const radios = document.querySelectorAll('input[name="mode"]');
 
 let setFilenameBtnTextContent;
 const DEFAULT_PATTERN = "<all_urls>";
 const logs = [];
 
 let monitoring = false;
-let timer = null;
+let timer = null, fetching = false;
 let filename = "";
+
+const defaultPatternConfig = {
+    "url_pattern": "*://*/*.example.com/*,*://*.example.com/api/*,*://*.example.com/*,*://*/api/*",
+    "activity_pattern": "/claimItemExplore,/claim/explore/item"
+};
+const configStr = localStorage.getItem("config");
+let mode = localStorage.getItem("mode") || "1";
+const urlPattrn = localStorage.getItem("url-pattern") || "";
+const config = Object.assign({}, defaultPatternConfig, configStr ? JSON.parse(configStr) : {});
 
 // 监听事件
 chrome.runtime.onMessage.addListener((message) => {
@@ -64,14 +76,55 @@ exportPowershellBtn.onclick = () => {
 patternExpDiv.onclick = (ev) => {
     let target = ev.target;
     if (target.tagName === "SPAN") {
-        patternInput.value = target.textContent;
+        const textContent = target.textContent;
+        patternInput.value = textContent;
+        localStorage.setItem("url-pattern", textContent);
     }
 }
 
+logDiv.addEventListener('click', (event) => {
+    const target = event.target;
+    if (target.tagName !== 'SPAN') {
+        return;
+    }
+    if (target.className.includes("btn-copy")) {
+        const index = +target.getAttribute("data-index");
+        const type = target.getAttribute("data-type");
+        const log = logs[index];
+        const maker = makers[type];
+        const content = maker(log)
+        copy(content);
+    }
+});
+
+setFilenameBtn.addEventListener('click', () => {
+    const _filename = window.prompt("请输入文件名");
+    if (_filename) {
+        if (!_filename.endsWith(".txt")) {
+            _filename += ".txt";
+        }
+        filename = _filename;
+        if (!setFilenameBtnTextContent) {
+            setFilenameBtnTextContent = setFilenameBtn.textContent;
+        }
+        setFilenameBtn.textContent = `${setFilenameBtnTextContent}[${_filename.length > 10 ? _filename.slice(0, 10) : _filename}]`;
+    }
+});
+
+syncConfigBtn.addEventListener("click", async () => {
+    if (fetching) {
+        return;
+    }
+    fetching = true;
+    await syncConfig();
+    fetching = false;
+});
+
 function filterIfNecessary() {
     let _logs = logs;
-    const checked = document.querySelector('input[name=mode]:checked');
-    const filter = logFilters[checked.value];
+    // const checked = document.querySelector('input[name=mode]:checked');
+    // const filter = logFilters[checked.value];
+    const filter = logFilters[mode];
     filter && (_logs = filter(_logs));
     return _logs;
 }
@@ -90,7 +143,6 @@ const makers = {
                 content += `  -H '${key}: ${headers[key]}' \\\n`;
             }
         }
-
         if (body) {
             const contentType = headers['Content-Type'];
             if (contentType.includes('json')) {
@@ -140,11 +192,6 @@ function makeFileContent(logs, type) {
     for (const item of logs) {
         content += maker(item);
         content += "\n";
-        // 按需设置分隔符；
-        // if (item.splitor) {
-        //     content += item.splitor;
-        //     content += "\n\n";
-        // }
     }
     return content;
 }
@@ -175,7 +222,7 @@ const logFilters = {
                 return false;
             }
             // '/sexual_dating/claimItemExplore', '/quiz_dating/claim/explore/item', '/girl-watch/claim/explore/item'
-            for (const item of ['/claimItemExplore', '/claim/explore/item']) {
+            for (const item of config['activity_pattern'].split(",")) {
                 if (log.url.includes(item)) {
                     matched[log.url] = 1;
                     return true;
@@ -188,16 +235,10 @@ const logFilters = {
         }
         // 默认情况下，新数据排前;
         const latest = _logs[0];
-        // 取得最后一个
-        // const last = _logs[_logs.length - 1];
         const field = "X-QOOKIA-PACK";
         const xQookiaPack = latest.headers[field];
         // 将最新请求的x-qookia-pack字段值应用于其他请求
         for (const item of _logs) {
-            // 设置分隔符
-            // if (item !== last) {
-            //     item.splitor = "&&";
-            // }
             if (item === latest) {
                 continue;
             }
@@ -240,9 +281,6 @@ function render() {
         return;
     }
     let html = `<div class="count">数量：${logs.length}</div>`;
-    // for (const item of logs) {
-    //     html += createLogItemHtml(item);
-    // }
     for (let i=0; i<logs.length; i++) {
         const item = logs[i];
         html += createLogItemHtml(item, i);
@@ -258,31 +296,69 @@ function copy(content) {
     }
 }
 
-logDiv.addEventListener('click', (event) => {
-    const target = event.target;
-    if (target.tagName !== 'SPAN') {
-        return;
-    }
-    if (target.className.includes("btn-copy")) {
-        const index = +target.getAttribute("data-index");
-        const type = target.getAttribute("data-type");
-        const log = logs[index];
-        const maker = makers[type];
-        const content = maker(log)
-        copy(content);
-    }
-});
+async function syncConfig() {
+    const url = "https://raw.githubusercontent.com/errr0l/request-interceptor/refs/heads/master/src/config.json";
+    const controller = new AbortController();
+    let timer = setTimeout(() => controller.abort(), 5000); // 5秒超时
+    // 尝试获取配置文件
+    return fetch(url, {
+        signal: controller.signal
+    })
+    .then(response => response.text())
+    .then(configStr => {
+        try {
+            const _config = JSON.parse(configStr);
+            Object.assign(config, _config);
+            updateNode(_config);
+            localStorage.setItem("config", configStr);
+        }
+        catch (error) {
+            console.error(error);
+            window.alert("同步失败：" + error.message);
+        }
+    })
+    .catch(error => {
+        console.log('请求失败:', error.message);
+        window.alert("同步失败：" + error.message);
+    })
+    .finally(() => {
+        clearTimeout(timer);
+    });
+}
 
-setFilenameBtn.addEventListener('click', () => {
-    const _filename = window.prompt("请输入文件名");
-    if (_filename) {
-        if (!_filename.endsWith(".txt")) {
-            _filename += ".txt";
-        }
-        filename = _filename;
-        if (!setFilenameBtnTextContent) {
-            setFilenameBtnTextContent = setFilenameBtn.textContent;
-        }
-        setFilenameBtn.textContent = `${setFilenameBtnTextContent}[${_filename.length > 10 ? _filename.slice(0, 10) : _filename}]`;
+function updateNode(config) {
+    if (mode === "1") {
+        activityPatternDiv.innerText = config["activity_pattern"];
     }
-});
+    let patternExpDivHtml = "";
+    for (const item of config["url_pattern"].split(",")) {
+        patternExpDivHtml += `<span>${item}</span>、`;
+    }
+    patternExpDiv.innerHTML = patternExpDivHtml.slice(0, -1);
+}
+
+// 初始化
+function init() {
+    updateNode(config);
+    radios.forEach((radio) => {
+        radio.addEventListener('click', (event) => {
+            const target = event.target;
+            const value = target.value;
+            if (value === "2") {
+                activityPatternDiv.innerText = "";
+            }
+            else {
+                activityPatternDiv.innerText = config['activity_pattern'];
+            }
+            localStorage.setItem("mode", value);
+            // 更新全局变量
+            mode = value;
+        });
+    });
+    radios[(+mode - 1)].checked = true;
+    if (urlPattrn) {
+        patternInput.value = urlPattrn;
+    }
+}
+
+init();

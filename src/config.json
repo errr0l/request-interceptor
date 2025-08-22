@@ -1,0 +1,4 @@
+{
+    "url_pattern": "*://*/*.example.com/*,*://*.example.com/api/*,*://*.example.com/*,*://*/api/*",
+    "activity_pattern": "/claimItemExplore,/claim/explore/item"
+}

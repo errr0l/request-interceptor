@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "请求拦截器",
-    "version": "1.0.4",
+    "version": "1.1.0",
     "description": "拦截网络请求，及其参数。",
     "permissions": [
         "<all_urls>",

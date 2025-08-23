@@ -140,17 +140,17 @@ const makers = {
                 if (excluded.includes(key)) {
                     continue;
                 }
-                content += `  -H '${key}: ${headers[key]}' \\\n`;
+                content += `-H '${key}: ${headers[key]}' \\\n`;
             }
         }
         if (body) {
             const contentType = headers['Content-Type'];
             if (contentType.includes('json')) {
-                content += `  --data-raw '${JSON.stringify(body)}'`;
+                content += `--data-raw '${JSON.stringify(body)}'`;
             }
             else if (contentType.includes('x-www-form-urlencoded')) {
                 const formData = new URLSearchParams(body).toString();
-                content += `  --data-raw '${formData}'`;
+                content += `--data-raw '${formData}'`;
             }
         }
         return content;
@@ -158,23 +158,27 @@ const makers = {
     'powershell': ({ method, url, headers, body }) => {
         let content = `Invoke-WebRequest -UseBasicParsing -Uri "${url}" -Method ${method} \`\n`;
         if (headers) {
-            content += "  -Headers @{\n";
+            content += "-Headers @{\n";
             for (const key in headers) {
                 if (excluded.includes(key)) {
                     continue;
                 }
-                content += `    "${key}"="${headers[key]}"\n`;
+                let value = headers[key];
+                if (value.includes("\"")) {
+                    value = value.replace(/"/g, '`"');
+                }
+                content += `    "${key}"="${value}"\n`;
             }
-            content += "  } \`\n";
+            content += "} \`\n";
         }
         if (body) {
             const contentType = headers['Content-Type'];
             if (contentType.includes('json')) {
-                content += `  -Body '${JSON.stringify(body)}'`;
+                content += `-Body '${JSON.stringify(body)}'`;
             }
             else if (contentType.includes('x-www-form-urlencoded')) {
                 const formData = new URLSearchParams(body).toString();
-                content += `  -Body '${formData}'`;
+                content += `-Body '${formData}'`;
             }
         }
         return content;

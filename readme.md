@@ -110,7 +110,7 @@ windows选powershell，unix系列选择curl，根据需要选择。
 
 2）加载已解压的扩展程序
 
-3）选中src/目录
+3）选中src/
 
 ## 四、打包
 

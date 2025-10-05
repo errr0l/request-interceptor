@@ -3,6 +3,7 @@ const controlBtn = document.getElementById("control");
 const clearBtn = document.getElementById("clear");
 const exportCurlBtn = document.getElementById("export-curl");
 const exportPowershellBtn = document.getElementById("export-powershell");
+const exportFetchBtn = document.getElementById("export-fetch");
 const patternInput = document.getElementById("url-pattern");
 const patternExpDiv = document.getElementById('url-pattern-exp');
 const setFilenameBtn = document.getElementById('set-filename');
@@ -144,8 +145,11 @@ const makers = {
             }
         }
         if (body) {
-            const contentType = headers['Content-Type'];
-            if (contentType.includes('json')) {
+            const contentType = headers['Content-Type'] || headers['content-type'];
+            if (!contentType) {
+                content += `--data-raw 'body'`;
+            }
+            else if (contentType.includes('json')) {
                 content += `--data-raw '${JSON.stringify(body)}'`;
             }
             else if (contentType.includes('x-www-form-urlencoded')) {
@@ -156,7 +160,7 @@ const makers = {
         return content;
     },
     'powershell': ({ method, url, headers, body }) => {
-        let content = `Invoke-WebRequest -UseBasicParsing -Uri "${url}" -Method ${method} \`\n`;
+        let content = `Invoke-WebRequest -UseBasicParsing -Uri '${url}' -Method ${method} \`\n`;
         if (headers) {
             content += "-Headers @{\n";
             for (const key in headers) {
@@ -164,16 +168,19 @@ const makers = {
                     continue;
                 }
                 let value = headers[key];
-                if (value.includes("\"")) {
-                    value = value.replace(/"/g, '`"');
-                }
-                content += `    "${key}"="${value}"\n`;
+                // if (value.includes("\"")) {
+                //     value = value.replace(/"/g, '`"');
+                // }
+                content += `    '${key}'='${value}'\n`;
             }
             content += "} \`\n";
         }
         if (body) {
-            const contentType = headers['Content-Type'];
-            if (contentType.includes('json')) {
+            const contentType = headers['Content-Type'] || headers['content-type'];
+            if (!contentType) {
+                content += `-Body '${body}'`;
+            }
+            else if (contentType.includes('json')) {
                 content += `-Body '${JSON.stringify(body)}'`;
             }
             else if (contentType.includes('x-www-form-urlencoded')) {
@@ -181,6 +188,27 @@ const makers = {
                 content += `-Body '${formData}'`;
             }
         }
+        return content;
+    },
+    'fetch': ({ method, url, headers, body }) => {
+        let content = `fetch("${url}", {\n'method': '${method}',\n`;
+        if (headers) {
+            content += `'headers': {\n${Object.entries(headers).map(([k, v]) => `    '${k}': '${v}'`).join(",\n")}\n},\n`;
+        }
+        if (body) {
+            const contentType = headers['Content-Type'] || headers['content-type'];
+            if (!contentType) {
+                content += `'body': '${body}'\n`;
+            }
+            else if (contentType.includes('json')) {
+                content += `'body': '${JSON.stringify(body)}'\n`;
+            }
+            else if (contentType.includes('x-www-form-urlencoded')) {
+                const formData = new URLSearchParams(body).toString();
+                content += `'body': '${formData}'\n`;
+            }
+        }
+        content += "});";
         return content;
     }
 };
@@ -251,13 +279,15 @@ const logFilters = {
         return _logs;
     }
 };
-
 function createLogItemHtml(item, i) {
     let html = `<div class="log-item">`;
     html += `<strong>时间: </strong> ${new Date(item.timestamp).toLocaleString()}<br>`;
     html += `<strong>URL: </strong> ${item.url}<br>`;
     html += `<strong>方法: </strong> ${item.method}<br>`;
-    html += `<strong>操作: </strong> <span class="btn-copy" data-type="curl" data-index="${i}">复制为curl</span> <span class="btn-copy" data-type="powershell" data-index="${i}">复制为PowerShell</span>`;
+    html += `<strong>操作: </strong>
+    <span class="btn-copy" data-type="curl" data-index="${i}">复制为curl</span>
+    <span class="btn-copy" data-type="powershell" data-index="${i}">复制为PowerShell</span>
+    <span class="btn-copy" data-type="fetch" data-index="${i}">复制为fetch</span>`;
     html += "<br>";
 
     if (item.headers) {

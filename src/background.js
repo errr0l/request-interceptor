@@ -27,6 +27,20 @@ chrome.browserAction.onClicked.addListener((tab) => {
     }
 });
 
+function shouldCancelRequest(details) {
+    const url = details.url;
+    if (pattern) {
+        const regexPattern = pattern
+            .replace(/\*/g, '[^ ]*')  // * 匹配除空格外的任何字符
+            .replace(/\?/g, '.');     // ? 匹配单个字符
+    
+        const regex = new RegExp(`^${regexPattern}$`);
+        if (regex.test(url)) {
+            return true;
+        }
+    }
+}
+
 // onBeforeRequest 监听器
 function beforeRequestListener(details) {
     if (details.method === 'POST') {
@@ -57,7 +71,7 @@ function beforeRequestListener(details) {
 }
 
 // onSendHeaders 监听器
-function sendHeadersListener(details) {
+function beforeSendHeadersListener(details) {
 
     const headers = {};
 
@@ -73,12 +87,16 @@ function sendHeadersListener(details) {
     };
     requestBody = null;
     chrome.runtime.sendMessage({ type: "NEW_REQUEST_LOG", data: item });
+
+    if (shouldCancelRequest(details)) {
+        return { cancel: true };  // 取消请求
+    }
 }
 
 function updateWebRequestListeners() {
     // 移除旧监听器
     chrome.webRequest.onBeforeRequest.removeListener(beforeRequestListener);
-    chrome.webRequest.onSendHeaders.removeListener(sendHeadersListener);
+    chrome.webRequest.onBeforeSendHeaders.removeListener(beforeSendHeadersListener);
 
     // 若为停止监听动作，则中断执行
     if (!monitoring) return;
@@ -92,11 +110,17 @@ function updateWebRequestListeners() {
         ["requestBody"]
     );
 
-    chrome.webRequest.onSendHeaders.addListener(
-        sendHeadersListener,
+    chrome.webRequest.onBeforeSendHeaders.addListener(
+        beforeSendHeadersListener,
         { urls },
-        ["requestHeaders"]
+        ["requestHeaders", "blocking"]
     );
+
+    // chrome.webRequest.onSendHeaders.addListener(
+    //     sendHeadersListener,
+    //     { urls },
+    //     ["requestHeaders", "blocking"]
+    // );
 }
 
 // 处理来自面板的消息

@@ -1,6 +1,9 @@
 let panelWindow = null;
 let monitoring = false, pattern = "";
 let requestBody = null;
+let interceptionMode = null;
+
+const INTERCEPTION_MODE_BLOCKING = "2";
 
 chrome.browserAction.onClicked.addListener((tab) => {
     if (panelWindow) {
@@ -13,7 +16,7 @@ chrome.browserAction.onClicked.addListener((tab) => {
             url: chrome.runtime.getURL('panel.html'),
             type: 'popup',
             width: 450,
-            height: 700
+            height: screen.availHeight
         }, (win) => {
             panelWindow = win;
             // 监听窗口关闭事件，清除 panelWindow 引用
@@ -70,7 +73,7 @@ function beforeRequestListener(details) {
     return {};
 }
 
-// onSendHeaders 监听器
+// onBeforeSendHeaders 监听器
 function beforeSendHeadersListener(details) {
 
     const headers = {};
@@ -88,6 +91,7 @@ function beforeSendHeadersListener(details) {
     requestBody = null;
     chrome.runtime.sendMessage({ type: "NEW_REQUEST_LOG", data: item });
 
+    // 若匹配命中的话，则取消请求
     if (shouldCancelRequest(details)) {
         return { cancel: true };  // 取消请求
     }
@@ -109,18 +113,15 @@ function updateWebRequestListeners() {
         { urls },
         ["requestBody"]
     );
-
+    const options = ["requestHeaders"];
+    if (interceptionMode === INTERCEPTION_MODE_BLOCKING) {
+        options.push("blocking");
+    }
     chrome.webRequest.onBeforeSendHeaders.addListener(
         beforeSendHeadersListener,
         { urls },
-        ["requestHeaders", "blocking"]
+        options
     );
-
-    // chrome.webRequest.onSendHeaders.addListener(
-    //     sendHeadersListener,
-    //     { urls },
-    //     ["requestHeaders", "blocking"]
-    // );
 }
 
 // 处理来自面板的消息
@@ -128,6 +129,7 @@ chrome.runtime.onMessage.addListener((message) => {
     if (message.type === "CONTROL") {
         monitoring = message.monitoring;
         pattern = message.pattern;
+        interceptionMode = message.interceptionMode;
         updateWebRequestListeners();
     }
 });

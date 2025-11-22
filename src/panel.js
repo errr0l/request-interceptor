@@ -10,6 +10,8 @@ const setFilenameBtn = document.getElementById('set-filename');
 const activityPatternDiv = document.getElementById("activity-pattern");
 const syncConfigBtn = document.getElementById("sync-config");
 const radios = document.querySelectorAll('input[name="mode"]');
+const logTitle = document.querySelector('.part2 > .title');
+const interceptionRadios = document.querySelectorAll('input[name="interception-mode"');
 
 let setFilenameBtnTextContent;
 const DEFAULT_PATTERN = "<all_urls>";
@@ -18,6 +20,7 @@ const logs = [];
 let monitoring = false;
 let timer = null, fetching = false;
 let filename = "";
+let interceptionMode;
 
 const defaultPatternConfig = {
     "url_pattern": "*://*/*.example.com/*,*://*.example.com/api/*,*://*.example.com/*,*://*/api/*",
@@ -54,7 +57,8 @@ controlBtn.onclick = () => {
     chrome.runtime.sendMessage({
         type: "CONTROL",
         monitoring: monitoring,
-        pattern: pattern || DEFAULT_PATTERN
+        pattern: pattern || DEFAULT_PATTERN,
+        interceptionMode: interceptionMode
     });
 }
 clearBtn.onclick = () => {
@@ -291,7 +295,7 @@ function createLogItemHtml(item, i) {
     html += "<br>";
 
     if (item.headers) {
-        html += `<strong>请求头:</strong><pre>`;
+        html += `<strong>请求头:</strong><pre style="word-wrap: break-word;">`;
         for (let key in item.headers) {
             html += `${key}: ${item.headers[key]}\n`;
         }
@@ -300,8 +304,13 @@ function createLogItemHtml(item, i) {
 
     if (item.body) {
         html += `<strong>请求体:</strong><pre>`;
-        for (let key in item.body) {
-            html += `${key}: ${item.body[key]}\n`;
+        if (Object.keys(item.body).length > 0) {
+            for (let key in item.body) {
+                html += `${key}: ${item.body[key]}\n`;
+            }
+        }
+        else {
+            html += "{}";
         }
         html += `</pre>`;
     }
@@ -314,7 +323,8 @@ function render() {
         logDiv.innerHTML = "无数据";
         return;
     }
-    let html = `<div class="count">数量：${logs.length}</div>`;
+    let html = "";
+    logTitle.textContent = `数据列表 (共${logs.length}条)`;
     for (let i=0; i<logs.length; i++) {
         const item = logs[i];
         html += createLogItemHtml(item, i);
@@ -389,6 +399,14 @@ function init() {
         });
     });
     radios[(+mode - 1)].checked = true;
+    interceptionRadios.forEach(item => {
+        item.addEventListener('click', (event) => {
+            const target = event.target;
+            const value = target.value;
+            interceptionMode = value;
+        });
+    });
+    interceptionMode = document.querySelector('input[name="interception-mode"]:checked').value;
     if (urlPattrn) {
         patternInput.value = urlPattrn;
     }

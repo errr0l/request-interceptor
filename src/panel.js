@@ -11,7 +11,6 @@ const activityPatternDiv = document.getElementById("activity-pattern");
 const syncConfigBtn = document.getElementById("sync-config");
 const radios = document.querySelectorAll('input[name="mode"]');
 const logTitle = document.querySelector('.part2 > .title');
-const interceptionRadios = document.querySelectorAll('input[name="interception-mode"');
 
 let setFilenameBtnTextContent;
 const DEFAULT_PATTERN = "<all_urls>";
@@ -20,7 +19,6 @@ const logs = [];
 let monitoring = false;
 let timer = null, fetching = false;
 let filename = "";
-let interceptionMode;
 
 const defaultPatternConfig = {
     "url_pattern": "*://*/*.example.com/*,*://*.example.com/api/*,*://*.example.com/*,*://*/api/*",
@@ -54,11 +52,21 @@ controlBtn.onclick = () => {
 
     const pattern = patternInput.value.trim();
 
+    const checkedInputs = document.querySelectorAll('input[name="intercept-method"]:checked');
+
+    const methods = [];
+
+    if (checkedInputs) {
+        for (const item of Array.from(checkedInputs)) {
+            methods.push(item.value);
+        }
+    }
     chrome.runtime.sendMessage({
         type: "CONTROL",
         monitoring: monitoring,
         pattern: pattern || DEFAULT_PATTERN,
-        interceptionMode: interceptionMode
+        interceptionMode: document.querySelector('input[name="interception-mode"]:checked').value,
+        methods: methods
     });
 }
 clearBtn.onclick = () => {
@@ -401,14 +409,6 @@ function init() {
         });
     });
     radios[(+mode - 1)].checked = true;
-    interceptionRadios.forEach(item => {
-        item.addEventListener('click', (event) => {
-            const target = event.target;
-            const value = target.value;
-            interceptionMode = value;
-        });
-    });
-    interceptionMode = document.querySelector('input[name="interception-mode"]:checked').value;
     if (urlPattrn) {
         patternInput.value = urlPattrn;
     }

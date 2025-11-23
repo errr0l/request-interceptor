@@ -2,7 +2,9 @@ let panelWindow = null;
 let monitoring = false, pattern = "";
 let requestBody = null;
 let interceptionMode = null;
-
+// 键值对的形式，如：{ 'GET': 1, 'POST': 1 }
+let methodSettings = null;
+let allowedMethodCount = 0;
 const INTERCEPTION_MODE_BLOCKING = "2";
 
 chrome.browserAction.onClicked.addListener((tab) => {
@@ -75,25 +77,30 @@ function beforeRequestListener(details) {
 
 // onBeforeSendHeaders 监听器
 function beforeSendHeadersListener(details) {
+    // 如果可能的话，过滤指定方法
+    const method = details.method;
+    // 不指定时，默认处理所有方法；
+    // 如果指定方法时，则检查当前方法是否在methodSettings中，存在就处理；
+    // 注意，不处理的请求，会正常请求服务器，但不会拦截数据到插件面板
+    if (allowedMethodCount === 0 || method in methodSettings) {
+        const headers = {};
+        for (const item of details.requestHeaders) {
+            headers[item.name] = item.value;
+        }
+        const item = {
+            url: details.url,
+            method: details.method,
+            headers: headers,
+            timestamp: Date.now(),
+            body: requestBody
+        };
+        requestBody = null;
+        chrome.runtime.sendMessage({ type: "NEW_REQUEST_LOG", data: item });
 
-    const headers = {};
-
-    for (const item of details.requestHeaders) {
-        headers[item.name] = item.value;
-    }
-    const item = {
-        url: details.url,
-        method: details.method,
-        headers: headers,
-        timestamp: Date.now(),
-        body: requestBody
-    };
-    requestBody = null;
-    chrome.runtime.sendMessage({ type: "NEW_REQUEST_LOG", data: item });
-
-    // 若匹配命中的话，则取消请求
-    if (shouldCancelRequest(details)) {
-        return { cancel: true };  // 取消请求
+        // 若匹配命中的话，则取消请求
+        if (shouldCancelRequest(details)) {
+            return { cancel: true };  // 取消请求
+        }
     }
 }
 
@@ -130,6 +137,15 @@ chrome.runtime.onMessage.addListener((message) => {
         monitoring = message.monitoring;
         pattern = message.pattern;
         interceptionMode = message.interceptionMode;
+        const methods = message.methods || [];
+        allowedMethodCount = methods.length;
+        const _methodSettings = {};
+        if (methods.length) {
+            for (const item of methods) {
+                _methodSettings[item] = 1;
+            }
+        }
+        methodSettings = _methodSettings;
         updateWebRequestListeners();
     }
 });

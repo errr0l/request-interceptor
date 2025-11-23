@@ -74,13 +74,16 @@
             flex-direction: column;
             overflow: hidden;
         }
+        .method-checkbox, .method-checkbox input {
+            cursor: pointer;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <div class="part1">
-            <h3>控制面板</h3>
+            <h3 style="margin: 0 0 15px; text-shadow: rgba(0, 0, 0, 0.2) 1px 1px 1px;">控制面板</h3>
             <div>
                 <label><strong>拦截规则: </strong></label>
                 <input type="text" id="url-pattern" placeholder="请输入" />
@@ -93,10 +96,30 @@
                 <input type="radio" id="mode2" name="mode" value="2" /><label for="mode2">默认</label>
                 <div id="activity-pattern"></div>
             </div>
+            <hr />
             <div>
                 <label><strong>拦截模式</strong>: </label>
                 <input type="radio" id="interception-mode-1" name="interception-mode" value="1" /><label for="interception-mode-1">仅拦截数据</label>
                 <input type="radio" id="interception-mode-2" name="interception-mode" value="2" checked /><label for="interception-mode-2">取消请求</label>
+            </div>
+            <hr />
+            <div>
+                <label><strong>拦截请求方法</strong>: </label>
+                <label class="method-checkbox">
+                    <input type="checkbox" name="intercept-method" value="GET" checked> GET
+                </label>
+                <label class="method-checkbox">
+                    <input type="checkbox" name="intercept-method" value="POST" checked> POST
+                </label>
+                <label class="method-checkbox">
+                    <input type="checkbox" name="intercept-method" value="PUT"> PUT
+                </label>
+                <label class="method-checkbox">
+                    <input type="checkbox" name="intercept-method" value="DELETE"> DELETE
+                </label>
+                <label class="method-checkbox">
+                    <input type="checkbox" name="intercept-method" value="PATCH"> PATCH
+                </label>
             </div>
             <hr />
             <div>

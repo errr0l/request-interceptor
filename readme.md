@@ -126,6 +126,12 @@ zip request-intercetpor.xpi *
 
 ![image](./static/images/2F3BC19B3D035A83167472E1D3DA4D51.png)
 
+3、新增拦截指定请求方法的特性
+
+可指定拦截需要的请求方法，进一步筛选请求。
+
+![image](./static/images/87B8F7659003594487A055BB89A5CF5E.jpg)
+
 ### 202508
 
 1、新增设置导出文件名的功能

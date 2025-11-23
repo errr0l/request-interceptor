@@ -319,12 +319,14 @@ function createLogItemHtml(item, i) {
 }
 
 function render() {
+    let title = "数据列表";
     if (logs.length === 0) {
         logDiv.innerHTML = "无数据";
+        logTitle.textContent = title;
         return;
     }
     let html = "";
-    logTitle.textContent = `数据列表 (共${logs.length}条)`;
+    logTitle.textContent = `${title} (共${logs.length}条)`;
     for (let i=0; i<logs.length; i++) {
         const item = logs[i];
         html += createLogItemHtml(item, i);

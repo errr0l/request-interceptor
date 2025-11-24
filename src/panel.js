@@ -29,6 +29,9 @@ let mode = localStorage.getItem("mode") || "1";
 const urlPattrn = localStorage.getItem("url-pattern") || "";
 const config = Object.assign({}, defaultPatternConfig, configStr ? JSON.parse(configStr) : {});
 
+// 默认去"取消请求"
+let interceptionMode = localStorage.getItem("interceptionMode") || "2";
+
 // 监听事件
 chrome.runtime.onMessage.addListener((message) => {
     if (message.type === "NEW_REQUEST_LOG") {
@@ -41,9 +44,6 @@ chrome.runtime.onMessage.addListener((message) => {
             render();
             timer = null;
         }, 1500);
-    }
-    else {
-        console.log(message);
     }
 });
 controlBtn.onclick = () => {
@@ -61,11 +61,13 @@ controlBtn.onclick = () => {
             methods.push(item.value);
         }
     }
+    interceptionMode = document.querySelector('input[name="interception-mode"]:checked').value;
+    localStorage.setItem("interceptionMode", interceptionMode);
     chrome.runtime.sendMessage({
         type: "CONTROL",
         monitoring: monitoring,
         pattern: pattern || DEFAULT_PATTERN,
-        interceptionMode: document.querySelector('input[name="interception-mode"]:checked').value,
+        interceptionMode: interceptionMode,
         methods: methods
     });
 }
@@ -411,6 +413,15 @@ function init() {
     radios[(+mode - 1)].checked = true;
     if (urlPattrn) {
         patternInput.value = urlPattrn;
+    }
+
+    // 设置interceptionMode
+    for (const item of Array.from(document.querySelectorAll('input[name="interception-mode"]'))) {
+        const value = item.value;
+        if (value === interceptionMode) {
+            item.setAttribute('checked', true);
+            break;
+        }
     }
 }
 

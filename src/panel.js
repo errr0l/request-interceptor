@@ -49,17 +49,15 @@ chrome.runtime.onMessage.addListener((message) => {
 controlBtn.onclick = () => {
     monitoring = !monitoring;
     controlBtn.textContent = monitoring ? "停止监听" : "开始监听";
-
     const pattern = patternInput.value.trim();
-
     const checkedInputs = document.querySelectorAll('input[name="intercept-method"]:checked');
-
     const methods = [];
-
-    if (checkedInputs) {
-        for (const item of Array.from(checkedInputs)) {
-            methods.push(item.value);
-        }
+    if (!checkedInputs || Array.from(checkedInputs).length == 0) {
+        window.alert("请至少选择一个需要拦截的方法");
+        return;
+    }
+    for (const item of Array.from(checkedInputs)) {
+        methods.push(item.value);
     }
     interceptionMode = document.querySelector('input[name="interception-mode"]:checked').value;
     localStorage.setItem("interceptionMode", interceptionMode);
@@ -137,8 +135,6 @@ syncConfigBtn.addEventListener("click", async () => {
 
 function filterIfNecessary() {
     let _logs = logs;
-    // const checked = document.querySelector('input[name=mode]:checked');
-    // const filter = logFilters[checked.value];
     const filter = logFilters[mode];
     filter && (_logs = filter(_logs));
     return _logs;
@@ -182,9 +178,6 @@ const makers = {
                     continue;
                 }
                 let value = headers[key];
-                // if (value.includes("\"")) {
-                //     value = value.replace(/"/g, '`"');
-                // }
                 content += `    '${key}'='${value}'\n`;
             }
             content += "} \`\n";
@@ -303,7 +296,6 @@ function createLogItemHtml(item, i) {
     <span class="btn-copy" data-type="powershell" data-index="${i}">复制为PowerShell</span>
     <span class="btn-copy" data-type="fetch" data-index="${i}">复制为fetch</span>`;
     html += "<br>";
-
     if (item.headers) {
         html += `<strong>请求头:</strong><pre style="word-wrap: break-word;">`;
         for (let key in item.headers) {
@@ -311,7 +303,6 @@ function createLogItemHtml(item, i) {
         }
         html += `</pre>`;
     }
-
     if (item.body) {
         html += `<strong>请求体:</strong><pre>`;
         if (Object.keys(item.body).length > 0) {
@@ -341,7 +332,6 @@ function render() {
         const item = logs[i];
         html += createLogItemHtml(item, i);
     }
-
     logDiv.innerHTML = html;
 }
 
@@ -414,7 +404,6 @@ function init() {
     if (urlPattrn) {
         patternInput.value = urlPattrn;
     }
-
     // 设置interceptionMode
     for (const item of Array.from(document.querySelectorAll('input[name="interception-mode"]'))) {
         const value = item.value;

@@ -4,8 +4,8 @@ let requestBody = null;
 let interceptionMode = null;
 // 键值对的形式，如：{ 'GET': 1, 'POST': 1 }
 let methodSettings = null;
-let allowedMethodCount = 0;
 const INTERCEPTION_MODE_BLOCKING = "2";
+let regex = null;
 
 chrome.browserAction.onClicked.addListener((tab) => {
     if (panelWindow) {
@@ -35,11 +35,12 @@ chrome.browserAction.onClicked.addListener((tab) => {
 function shouldCancelRequest(details) {
     const url = details.url;
     if (pattern) {
-        const regexPattern = pattern
-            .replace(/\*/g, '[^ ]*')  // * 匹配除空格外的任何字符
-            .replace(/\?/g, '.');     // ? 匹配单个字符
-    
-        const regex = new RegExp(`^${regexPattern}$`);
+        if (!regex) {
+            const regexPattern = pattern
+                .replace(/\*/g, '[^ ]*')  // * 匹配除空格外的任何字符
+                .replace(/\?/g, '.');     // ? 匹配单个字符
+            regex = new RegExp(`^${regexPattern}$`);
+        }
         if (regex.test(url)) {
             return true;
         }
@@ -48,7 +49,9 @@ function shouldCancelRequest(details) {
 
 // onBeforeRequest 监听器
 function beforeRequestListener(details) {
-    if (details.method === 'POST') {
+    // 按标准用法
+    const method = details.method;
+    if (method in methodSettings && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
         if (details.requestBody.formData) {
             details.requestBody.data = {};
             for (const [key, value] of Object.entries(details.requestBody.formData)) {
@@ -64,7 +67,7 @@ function beforeRequestListener(details) {
             }
             catch (e) {
                 console.log('Failed to parse request body:', e);
-                details.requestBody.data = { error: '无法解析的请求体', rawText: _data };
+                details.requestBody.data = _data;
             }
         }
         else {
@@ -82,7 +85,7 @@ function beforeSendHeadersListener(details) {
     // 不指定时，默认处理所有方法；
     // 如果指定方法时，则检查当前方法是否在methodSettings中，存在就处理；
     // 注意，不处理的请求，会正常请求服务器，但不会拦截数据到插件面板
-    if (allowedMethodCount === 0 || method in methodSettings) {
+    if (method in methodSettings) {
         const headers = {};
         for (const item of details.requestHeaders) {
             headers[item.name] = item.value;
@@ -110,7 +113,10 @@ function updateWebRequestListeners() {
     chrome.webRequest.onBeforeSendHeaders.removeListener(beforeSendHeadersListener);
 
     // 若为停止监听动作，则中断执行
-    if (!monitoring) return;
+    if (!monitoring) {
+        regex = null;
+        return;
+    }
 
     // 设置监听模式，并添加新的监听器
     const urls = [pattern];
@@ -138,7 +144,6 @@ chrome.runtime.onMessage.addListener((message) => {
         pattern = message.pattern;
         interceptionMode = message.interceptionMode;
         const methods = message.methods || [];
-        allowedMethodCount = methods.length;
         const _methodSettings = {};
         if (methods.length) {
             for (const item of methods) {

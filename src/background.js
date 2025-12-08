@@ -99,7 +99,6 @@ function beforeSendHeadersListener(details) {
         };
         requestBody = null;
         chrome.runtime.sendMessage({ type: "NEW_REQUEST_LOG", data: item });
-
         // 若匹配命中的话，则取消请求
         if (shouldCancelRequest(details)) {
             return { cancel: true };  // 取消请求

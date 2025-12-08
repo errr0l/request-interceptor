@@ -26,5 +26,18 @@
             "32": "favicon-32x32.png",
             "96": "favicon-96x96.png"
         }
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "{329745ee-48c1-44cc-ba67-f6cc9e86263a}",
+            "data_collection_permissions": {
+                "required": [
+                   "locationInfo"
+                ],
+                "optional": [
+                   "technicalAndInteraction"
+                ]
+            }
+        }
     }
 }

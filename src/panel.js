@@ -11,6 +11,8 @@ const activityPatternDiv = document.getElementById("activity-pattern");
 const syncConfigBtn = document.getElementById("sync-config");
 const radios = document.querySelectorAll('input[name="mode"]');
 const logTitle = document.querySelector('.part2 > .title');
+const extraRadios = document.querySelectorAll('input[name="extra-mode"]');
+const dataFilterPatternInput = document.getElementById("data-filter-pattern");
 
 let setFilenameBtnTextContent;
 const DEFAULT_PATTERN = "<all_urls>";
@@ -28,6 +30,9 @@ const configStr = localStorage.getItem("config");
 let mode = localStorage.getItem("mode") || "1";
 const urlPattrn = localStorage.getItem("url-pattern") || "";
 const config = Object.assign({}, defaultPatternConfig, configStr ? JSON.parse(configStr) : {});
+
+let extraMode = localStorage.getItem("extra-mode") || "4";
+let extraPattern = localStorage.getItem("extra-pattern") || "";
 
 // 默认去"取消请求"
 let interceptionMode = localStorage.getItem("interceptionMode") || "2";
@@ -133,8 +138,27 @@ syncConfigBtn.addEventListener("click", async () => {
     fetching = false;
 });
 
+// 目前是这样的：先按额外规则过滤（会将活动规则包含在内）
 function filterIfNecessary() {
     let _logs = logs;
+    if (logs.length === 0) {
+        return logs;
+    }
+    const extraModeInput = document.querySelector('input[name="extra-mode"]');
+    if (extraModeInput) {
+        const extraMode = extraModeInput.value;
+        window.localStorage.setItem("extra-mode", extraMode);
+        if (extraMode === "3") {
+            const pattern = dataFilterPatternInput.value;
+            if (!pattern) {
+                window.alert("自定义规则不能为空(以半角逗号分隔, 如: /api/123,/api/222");
+                return [];
+            }
+            window.localStorage.setItem("extra-pattern", pattern);
+            const extraFilter = logFilters[extraMode];
+            _logs = extraFilter(_logs, pattern);
+        }
+    }
     const filter = logFilters[mode];
     filter && (_logs = filter(_logs));
     return _logs;
@@ -256,12 +280,13 @@ const logFilters = {
     '1': (logs) => {
         // 目前来说，都是post请求，且每种接口只取一次
         const matched = {};
+        const patterns = config['activity_pattern'].split(",");
         const _logs = logs.filter(log => {
             if (log.method !== "POST" || matched[log.url]) {
                 return false;
             }
             // '/sexual_dating/claimItemExplore', '/quiz_dating/claim/explore/item', '/girl-watch/claim/explore/item'
-            for (const item of config['activity_pattern'].split(",")) {
+            for (const item of patterns) {
                 if (log.url.includes(item)) {
                     matched[log.url] = 1;
                     return true;
@@ -284,6 +309,23 @@ const logFilters = {
             item.headers[field] = xQookiaPack;
         }
         return _logs;
+    },
+    "3": (logs, pattern) => {
+        const matched = {};
+        const activityPatterns = config['activity_pattern'].split(",");
+        const patterns = [...pattern.split(","), ...activityPatterns];
+        return logs.filter(log => {
+            if (matched[log.url]) {
+                return false;
+            }
+            for (const item of patterns) {
+                if (log.url.includes(item)) {
+                    matched[log.url] = 1;
+                    return true;
+                }
+            }
+            return false;
+        });
     }
 };
 function createLogItemHtml(item, i) {
@@ -411,6 +453,25 @@ function init() {
             item.setAttribute('checked', true);
             break;
         }
+    }
+
+    extraRadios.forEach((radio) => {
+        radio.addEventListener('click', (event) => {
+            const target = event.target;
+            const value = target.value;
+            if (value === "3") {
+                dataFilterPatternInput.style = "visibility: visible;";
+            }
+            else {
+                dataFilterPatternInput.style = "visibility: hidden;";
+            }
+        });
+    })
+
+    extraRadios[(+extraMode - 3)].checked = true;
+    extraPattern && (document.querySelector("#data-filter-pattern").value = extraPattern);
+    if (extraMode === "3") {
+        dataFilterPatternInput.style = "visibility: visible;";
     }
 }
 

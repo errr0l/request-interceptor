@@ -141,10 +141,12 @@ syncConfigBtn.addEventListener("click", async () => {
 // 目前是这样的：先按额外规则过滤（会将活动规则包含在内）
 function filterIfNecessary() {
     let _logs = logs;
-    if (logs.length === 0) {
-        return logs;
+    if (_logs.length === 0) {
+        return [];
     }
-    const extraModeInput = document.querySelector('input[name="extra-mode"]');
+    let extraLogs = [];
+    let activityLogs = [];
+    const extraModeInput = document.querySelector('input[name="extra-mode"]:checked');
     if (extraModeInput) {
         const extraMode = extraModeInput.value;
         window.localStorage.setItem("extra-mode", extraMode);
@@ -156,12 +158,12 @@ function filterIfNecessary() {
             }
             window.localStorage.setItem("extra-pattern", pattern);
             const extraFilter = logFilters[extraMode];
-            _logs = extraFilter(_logs, pattern);
+            extraLogs = extraFilter(_logs, pattern);
         }
     }
     const filter = logFilters[mode];
-    filter && (_logs = filter(_logs));
-    return _logs;
+    filter && (activityLogs = filter(_logs));
+    return [...activityLogs, ...extraLogs];
 }
 
 // 目前仅支持两种模式
@@ -190,6 +192,10 @@ const makers = {
                 const formData = new URLSearchParams(body).toString();
                 content += `--data-raw '${formData}'`;
             }
+        }
+        // 如果没有body，则截掉"\"
+        else {
+            content = content.slice(0, -1);
         }
         return content;
     },
@@ -312,10 +318,10 @@ const logFilters = {
     },
     "3": (logs, pattern) => {
         const matched = {};
-        const activityPatterns = config['activity_pattern'].split(",");
-        const patterns = [...pattern.split(","), ...activityPatterns];
+        const excluded = config['activity_pattern'].split(",");
+        const patterns = pattern.split(",");
         return logs.filter(log => {
-            if (matched[log.url]) {
+            if (matched[log.url] || excluded.some(item => log.url.includes(item))) {
                 return false;
             }
             for (const item of patterns) {

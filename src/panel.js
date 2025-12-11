@@ -147,22 +147,31 @@ function filterIfNecessary() {
     let extraLogs = [];
     let activityLogs = [];
     const extraModeInput = document.querySelector('input[name="extra-mode"]:checked');
-    if (extraModeInput) {
-        const extraMode = extraModeInput.value;
-        window.localStorage.setItem("extra-mode", extraMode);
-        if (extraMode === "3") {
-            const pattern = dataFilterPatternInput.value;
-            if (!pattern) {
-                window.alert("自定义规则不能为空(以半角逗号分隔, 如: /api/123,/api/222");
-                return [];
-            }
-            window.localStorage.setItem("extra-pattern", pattern);
-            const extraFilter = logFilters[extraMode];
-            extraLogs = extraFilter(_logs, pattern);
+    // 每一次自加，表示出现了一次筛选
+    let hits = 0;
+    const extraMode = extraModeInput?.value;
+    window.localStorage.setItem("extra-mode", extraMode);
+    if (extraMode === "3") {
+        const pattern = dataFilterPatternInput.value;
+        if (!pattern) {
+            window.alert("自定义规则不能为空(以半角逗号分隔, 如: /api/123,/api/222");
+            return [];
         }
+        window.localStorage.setItem("extra-pattern", pattern);
+        const extraFilter = logFilters[extraMode];
+        extraLogs = extraFilter(_logs, pattern);
+        hits++;
     }
+
     const filter = logFilters[mode];
-    filter && (activityLogs = filter(_logs));
+    if (filter) {
+        activityLogs = filter(_logs)
+        hits++;
+    }
+
+    if (hits == 0) {
+        return _logs;
+    }
     return [...activityLogs, ...extraLogs];
 }
 
